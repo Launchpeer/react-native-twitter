@@ -1,4 +1,7 @@
 # react-native-twitter
+Forked from https://github.com/Piroro-hs/react-native-twitter
+
+Updated to be compatible with RN > 0.59.0
 
 A Twitter API client library for React Native
 
