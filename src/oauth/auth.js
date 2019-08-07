@@ -5,6 +5,15 @@ import URLSearchParams from 'url-search-params';
 import request from './request';
 import {query} from '../util';
 
+function queryParams (string){
+  return string.substr(1).split('&').reduce(function (q, query) {
+  var chunks = query.split('=');
+  var key = chunks[0];
+  var value = chunks[1];
+  return (q[key] = value, q);
+}, {});
+}
+
 function getRequestToken(tokens, callbackUrl, accessType) {
   const method = 'POST';
   const url = 'https://api.twitter.com/oauth/request_token';
@@ -12,10 +21,10 @@ function getRequestToken(tokens, callbackUrl, accessType) {
   return request(tokens, url, {method, body}, {oauth_callback: callbackUrl})
     .then(response => response.text())
     .then((text) => {
-      const params = new URLSearchParams(text);
+      const params = queryParams(text);
       return {
-        requestToken: params.get('oauth_token'),
-        requestTokenSecret: params.get('oauth_token_secret'),
+        requestToken: params.auth_token,
+        requestTokenSecret: params.oauth_token_secret,
       };
     });
 }
@@ -34,12 +43,12 @@ function getAccessToken(
   )
     .then(response => response.text())
     .then((text) => {
-      const params = new URLSearchParams(text);
+      const params = queryParams(text);
       return {
-        accessToken: params.get('oauth_token'),
-        accessTokenSecret: params.get('oauth_token_secret'),
-        id: params.get('user_id'),
-        name: params.get('screen_name'),
+        accessToken: params.auth_token,
+        accessTokenSecret: params.oauth_token_secret,
+        id: params.user_id,
+        name: params.screen_name,
       };
     });
 }
@@ -47,12 +56,12 @@ function getAccessToken(
 const verifierDeferreds = new Map();
 
 Linking.addEventListener('url', ({url}) => {
-  const params = new URLSearchParams(url.split('?')[1]);
-  if (params.has('oauth_token') && verifierDeferreds.has(params.get('oauth_token'))) {
-    const verifierDeferred = verifierDeferreds.get(params.get('oauth_token'));
-    verifierDeferreds.delete(params.get('oauth_token'));
-    if (params.has('oauth_verifier')) {
-      verifierDeferred.resolve(params.get('oauth_verifier'));
+  const params = queryParams(url.split("?")[1]);
+  if ((params.auth_token) && verifierDeferreds.has(params.auth_token)) {
+    const verifierDeferred = verifierDeferreds.get(params.auth_token);
+    verifierDeferreds.delete(params.auth_token);
+    if (params.oauth_verifier) {
+      verifierDeferred.resolve(params.oauth_verifier);
     } else {
       verifierDeferred.reject(new Error('denied'));
     }
